@@ -4,61 +4,64 @@
 
 set -e # exit on first error
 
-DART_REPO=`pwd`/dart-repo
+PACKAGES="subversion git-core git-svn openjdk-6-jdk build-essential \
+         libc6-dev-i386 g++-multilib gcc-4.6 g++-4.6 realpath"
 
-if [ ! "`dpkg -s subversion`" ]; then
+# Prepare machine
+# https://code.google.com/p/dart/wiki/BuildDartSDKOnUbuntu10_04
+if [ ! "`dpkg -s $PACKAGES`" ]; then
     sudo apt-get update
-    sudo apt-get install subversion git-core git-svn python-software-properties
-    sudo add-apt-repository ppa:webupd8team/java
-    sudo apt-get update
-    sudo apt-get install oracle-java6-installer
+    sudo apt-get install -y python-software-properties
+    sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+    sudo apt-get -y upgrade
+    sudo apt-get install -y $PACKAGES
+    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 20
+    sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 20
+    sudo update-alternatives --config gcc
+    sudo update-alternatives --config g++
 fi
 
-# install gclient
+BUULD_PATH=`pwd`
+DART_REPO=$BUULD_PATH/dart-repo
+
+
+# install chromium build scripts
 if [ ! -e ./depot_tools ]; then
     git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 fi
-export PATH="$PATH":`pwd`/depot_tools
+export PATH="$PATH":$BUULD_PATH/depot_tools
 
-
-# Prepare machine
-# https://code.google.com/p/dart/wiki/PreparingYourMachine
-if [ ! -e ./install-build-deps.sh ]; then
-    wget http://src.chromium.org/svn/trunk/src/build/install-build-deps.sh
-    chmod u+x install-build-deps.sh
-    ./install-build-deps.sh --no-chromeos-fonts
-fi
-
-
-# Download/update source
+# Download/update source code
 if [ -e $DART_REPO ]; then
     # update source
     cd $DART_REPO/dart
     git svn fetch
     git merge git-svn
-else 
+else
     # Download source
     mkdir $DART_REPO; cd $DART_REPO
     gclient config https://dart.googlecode.com/svn/trunk/deps/all.deps
     git svn clone -rHEAD https://dart.googlecode.com/svn/trunk/dart dart
 fi
-gclient sync
+gclient sync --force
 
 
 # Build
 cd $DART_REPO/dart
 ## release doesn't compile
 #./tools/build.py -v -j 4 --arch=x64 -m release create_sdk
-./tools/build.py -v -j 4 --arch=x64 create_sdk
+./tools/build.py -j4 -m release -a x64 create_sdk
+
 
 # if all goes well:
 # tar to /vagrant
 if [ -e /vagrant/dart-sdk.tar ]; then
     rm /vagrant/dart-sdk.tar
 fi
-cd $DART_REPO/dart/out/DebugX64
+cd $DART_REPO/dart/out/ReleaseX64
 tar czf /vagrant/dart-sdk.tar dart-sdk
 
+echo "`./dart --version`"
 echo "
 Successfuly built Dart SDK
 "
