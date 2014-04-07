@@ -2,28 +2,33 @@
 # Build dart-sdk from scratch. This includes installing all dependancies
 # to successfuly compile dart.
 
-set -e # exit on first error
-
 PACKAGES="subversion git-core git-svn openjdk-6-jdk build-essential \
          libc6-dev-i386 g++-multilib gcc-4.6 g++-4.6 realpath"
 
+dpkg -s $PACKAGES > /dev/null
+INSTALLED=$?
+
+set -e # exit on first error
+
 # Prepare machine
 # https://code.google.com/p/dart/wiki/BuildDartSDKOnUbuntu10_04
-if [ ! "`dpkg -s $PACKAGES`" ]; then
+if [ $INSTALLED -ne 0 ]; then
     sudo apt-get update
     sudo apt-get install -y python-software-properties
     sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-    sudo apt-get -y upgrade
+    sudo apt-get update
     sudo apt-get install -y $PACKAGES
+    sudo apt-get -y upgrade
     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 20
     sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 20
     sudo update-alternatives --config gcc
     sudo update-alternatives --config g++
 fi
 
+#VERSION=trunk
+VERSION=branches/1.2
 BUULD_PATH=`pwd`
 DART_REPO=$BUULD_PATH/dart-repo
-
 
 # install chromium build scripts
 if [ ! -e ./depot_tools ]; then
@@ -40,8 +45,8 @@ if [ -e $DART_REPO ]; then
 else
     # Download source
     mkdir $DART_REPO; cd $DART_REPO
-    gclient config https://dart.googlecode.com/svn/trunk/deps/all.deps
-    git svn clone -rHEAD https://dart.googlecode.com/svn/trunk/dart dart
+    gclient config https://dart.googlecode.com/svn/$VERSION/deps/all.deps
+    git svn clone -rHEAD https://dart.googlecode.com/svn/$VERSION/dart dart
 fi
 gclient sync --force
 
