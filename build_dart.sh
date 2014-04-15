@@ -3,7 +3,7 @@
 # to successfuly compile dart.
 
 PACKAGES="subversion git-core git-svn openjdk-6-jdk build-essential \
-         libc6-dev-i386 g++-multilib gcc-4.6 g++-4.6 realpath"
+         libc6-dev-i386 g++-multilib gcc-4.6 g++-4.6 realpath python2.7"
 
 dpkg -s $PACKAGES > /dev/null
 INSTALLED=$?
@@ -16,17 +16,20 @@ if [ $INSTALLED -ne 0 ]; then
     sudo apt-get update
     sudo apt-get install -y python-software-properties
     sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+    sudo add-apt-repository ppa:fkrull/deadsnakes
     sudo apt-get update
     sudo apt-get install -y $PACKAGES
     sudo apt-get -y upgrade
     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 20
     sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 20
+    sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 20
     sudo update-alternatives --config gcc
     sudo update-alternatives --config g++
+    sudo update-alternatives --config python
 fi
 
-#VERSION=trunk
-VERSION=branches/1.2
+VERSION=trunk
+#VERSION=branches/1.2
 BUULD_PATH=`pwd`
 DART_REPO=$BUULD_PATH/dart-repo
 
